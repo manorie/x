@@ -46,7 +46,6 @@ BE
   - new
 - checker.go
   - new
-  - update
   - delete
   - start
   - stop

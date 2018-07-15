@@ -6,29 +6,33 @@ import (
 )
 
 func main() {
+
 	ep, err := newEndPoint("http://www.google.com", "GET", true)
 	if err != nil {
 		log.Fatal(err)
 	}
-	ch, err := newChecker(ep, 2*time.Second, 2*time.Second)
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	var fn = func(ep *endPoint) error {
-		log.Printf("checking \n%s", ep)
-		return nil
-	}
+	call(ep, time.Second*2)
 
-	ch.start(fn)
+	// ch, err := newChecker(ep, 2*time.Second, 2*time.Second)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	time.Sleep(10 * time.Second)
+	// var fn = func(ep *endPoint) error {
+	// 	log.Printf("checking \n%s", ep)
+	// 	return nil
+	// }
 
-	ch.stop()
+	// ch.start(fn)
 
-	time.Sleep(10 * time.Second)
+	// time.Sleep(10 * time.Second)
 
-	ch.start(fn)
+	// ch.stop()
 
-	time.Sleep(10 * time.Second)
+	// time.Sleep(10 * time.Second)
+
+	// ch.start(fn)
+
+	// time.Sleep(10 * time.Second)
 }

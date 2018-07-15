@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/satori/go.uuid"
@@ -67,6 +68,7 @@ type checker struct {
 	interval time.Duration
 	ticker   *time.Ticker
 	stopped  chan bool
+	mu       *sync.Mutex
 }
 
 func newChecker(ep *endPoint, timeout, interval time.Duration) (*checker, error) {
@@ -96,6 +98,7 @@ func newChecker(ep *endPoint, timeout, interval time.Duration) (*checker, error)
 		interval,
 		&time.Ticker{},
 		make(chan bool),
+		&sync.Mutex{},
 	}, nil
 }
 
@@ -111,6 +114,9 @@ var (
 )
 
 func (ch *checker) start(fn func(ep *endPoint) error) error {
+	ch.mu.Lock()
+	defer ch.mu.Unlock()
+
 	if ch.active {
 		return ErrCheckerAlreadyStarted
 	}
@@ -136,6 +142,9 @@ func (ch *checker) start(fn func(ep *endPoint) error) error {
 }
 
 func (ch *checker) stop() error {
+	ch.mu.Lock()
+	defer ch.mu.Unlock()
+
 	if !ch.active {
 		return ErrCheckerAlreadyStopped
 	}
