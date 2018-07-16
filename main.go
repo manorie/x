@@ -7,28 +7,27 @@ import (
 
 func main() {
 
-	ep, err := newEndPoint("http://www.google.com", "GET", true)
+	ep, err := newEndPoint("https://ounass.ae/asdasda/asdads", "GET", true)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	call(ep, time.Second*2)
+	ch, err := newChecker(ep, 2*time.Second, 2*time.Second)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// ch, err := newChecker(ep, 2*time.Second, 2*time.Second)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	var fn = func(ep *endPoint) error {
+		log.Printf("checking \n%s", ep)
+		log.Println(call(ep, time.Second*2))
+		return nil
+	}
 
-	// var fn = func(ep *endPoint) error {
-	// 	log.Printf("checking \n%s", ep)
-	// 	return nil
-	// }
+	ch.start(fn)
 
-	// ch.start(fn)
+	time.Sleep(10 * time.Second)
 
-	// time.Sleep(10 * time.Second)
-
-	// ch.stop()
+	ch.stop()
 
 	// time.Sleep(10 * time.Second)
 

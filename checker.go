@@ -31,9 +31,9 @@ var (
 
 func newEndPoint(path, method string, redirects bool) (*endPoint, error) {
 	isHTTP := strings.Contains(path, HTTPPrefix)
-	isHTTPs := strings.Contains(path, HTTPSPrefix)
+	isHTTPS := strings.Contains(path, HTTPSPrefix)
 
-	if !isHTTP && isHTTPs {
+	if !isHTTP && !isHTTPS {
 		return nil, ErrEndPointPathFormat
 	}
 	for _, m := range AvailableMethods {
@@ -41,7 +41,7 @@ func newEndPoint(path, method string, redirects bool) (*endPoint, error) {
 			return &endPoint{
 				path,
 				method,
-				isHTTPs,
+				isHTTPS,
 				redirects,
 			}, nil
 		}
