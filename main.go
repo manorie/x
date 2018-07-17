@@ -2,10 +2,14 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"time"
 )
 
 func main() {
+	go func() {
+		log.Fatal(http.ListenAndServe("localhost:8080", globalRouter))
+	}()
 
 	ep, err := newEndPoint("https://ounass.ae/asdasda/asdads", "GET", true)
 	if err != nil {
@@ -17,7 +21,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var fn = func(ep *endPoint) error {
+	var fn = func(ep *EndPoint) error {
 		log.Printf("checking \n%s", ep)
 		log.Println(call(ep, time.Second*2))
 		return nil

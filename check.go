@@ -1,8 +1,8 @@
 package main
 
-type check struct {
-	err         error
-	statusCode  int
-	bytes       int
-	timeElapsed float64
+type Check struct {
+	Err         error   `json:"-"`
+	StatusCode  int     `json:"statusCode"`
+	Bytes       int     `json:"bytes"`
+	TimeElapsed float64 `json:"timeElapsed"`
 }

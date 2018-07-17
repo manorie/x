@@ -9,18 +9,18 @@ import (
 	"time"
 )
 
-func call(ep *endPoint, timeout time.Duration) *check {
-	url, err := url.Parse(ep.path)
+func call(ep *EndPoint, timeout time.Duration) *Check {
+	url, err := url.Parse(ep.Path)
 	if err != nil {
-		return &check{
-			err: err,
+		return &Check{
+			Err: err,
 		}
 	}
 
-	req, err := http.NewRequest(ep.method, url.String(), nil)
+	req, err := http.NewRequest(ep.Method, url.String(), nil)
 	if err != nil {
-		return &check{
-			err: err,
+		return &Check{
+			Err: err,
 		}
 	}
 
@@ -42,22 +42,22 @@ func call(ep *endPoint, timeout time.Duration) *check {
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return &check{
-			err: err,
+		return &Check{
+			Err: err,
 		}
 	}
 
 	bodyRead, err := ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
 	if err != nil {
-		return &check{
-			err:        err,
-			statusCode: resp.StatusCode,
+		return &Check{
+			Err:        err,
+			StatusCode: resp.StatusCode,
 		}
 	}
 	t1 = time.Now()
 
-	return &check{
+	return &Check{
 		nil,
 		resp.StatusCode,
 		len(bodyRead),

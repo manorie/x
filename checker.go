@@ -11,11 +11,9 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-type endPoint struct {
-	path           string
-	method         string
-	isHTTPS        bool
-	allowRedirects bool
+type EndPoint struct {
+	Path   string `json:"path"`
+	Method string `json:"method"`
 }
 
 const (
@@ -29,7 +27,7 @@ var (
 	AvailableMethods = [4]string{"GET", "POST", "PUT", "DELETE"}
 )
 
-func newEndPoint(path, method string, redirects bool) (*endPoint, error) {
+func newEndPoint(path, method string, redirects bool) (*EndPoint, error) {
 	isHTTP := strings.Contains(path, HTTPPrefix)
 	isHTTPS := strings.Contains(path, HTTPSPrefix)
 
@@ -38,11 +36,9 @@ func newEndPoint(path, method string, redirects bool) (*endPoint, error) {
 	}
 	for _, m := range AvailableMethods {
 		if m == method {
-			return &endPoint{
+			return &EndPoint{
 				path,
 				method,
-				isHTTPS,
-				redirects,
 			}, nil
 		}
 	}
@@ -52,26 +48,25 @@ func newEndPoint(path, method string, redirects bool) (*endPoint, error) {
 const (
 	endPointTemplate = `` +
 		`Path			[%s]` + "\n" +
-		`Method			[%s]` + "\n" +
-		`Allow Redirects		[%t]` + "\n"
+		`Method			[%s]` + "\n"
 )
 
-func (ep *endPoint) String() string {
-	return fmt.Sprintf(endPointTemplate, ep.path, ep.method, ep.allowRedirects)
+func (ep *EndPoint) String() string {
+	return fmt.Sprintf(endPointTemplate, ep.Path, ep.Method)
 }
 
-type checker struct {
-	id       string
-	ep       *endPoint
-	active   bool
-	timeout  time.Duration
-	interval time.Duration
+type Checker struct {
+	ID       string        `json:"id"`
+	EP       *EndPoint     `json:"endPoint"`
+	Active   bool          `json:"active"`
+	Timeout  time.Duration `json:"timeout,timeunit:s"`
+	Interval time.Duration `json:"inteval,timeunit:s"`
 	ticker   *time.Ticker
 	stopped  chan bool
 	mu       *sync.Mutex
 }
 
-func newChecker(ep *endPoint, timeout, interval time.Duration) (*checker, error) {
+func newChecker(ep *EndPoint, timeout, interval time.Duration) (*Checker, error) {
 	if ep == nil {
 		return nil, ErrEndPointCantBeNil
 	}
@@ -90,7 +85,7 @@ func newChecker(ep *endPoint, timeout, interval time.Duration) (*checker, error)
 		return nil, err
 	}
 
-	return &checker{
+	return &Checker{
 		id.String(),
 		ep,
 		false,
@@ -113,25 +108,25 @@ var (
 	ErrCheckerAlreadyStopped = errors.New("Checker is already stopped")
 )
 
-func (ch *checker) start(fn func(ep *endPoint) error) error {
+func (ch *Checker) start(fn func(ep *EndPoint) error) error {
 	ch.mu.Lock()
 	defer ch.mu.Unlock()
 
-	if ch.active {
+	if ch.Active {
 		return ErrCheckerAlreadyStarted
 	}
-	ch.active = true
-	ch.ticker = time.NewTicker(ch.interval)
-	log.Printf("checker starting for \n%s", ch.ep)
+	ch.Active = true
+	ch.ticker = time.NewTicker(ch.Interval)
+	log.Printf("Checker starting for \n%s", ch.EP)
 
 	go func() {
-		defer log.Printf("checker stopped for \n%s", ch.ep)
+		defer log.Printf("Checker stopped for \n%s", ch.EP)
 
 		for {
 			select {
 			case <-ch.ticker.C:
-				if err := fn(ch.ep); err != nil {
-					log.Printf("checker error \n%s", err)
+				if err := fn(ch.EP); err != nil {
+					log.Printf("Checker error \n%s", err)
 				}
 			case <-ch.stopped:
 				return
@@ -141,14 +136,14 @@ func (ch *checker) start(fn func(ep *endPoint) error) error {
 	return nil
 }
 
-func (ch *checker) stop() error {
+func (ch *Checker) stop() error {
 	ch.mu.Lock()
 	defer ch.mu.Unlock()
 
-	if !ch.active {
+	if !ch.Active {
 		return ErrCheckerAlreadyStopped
 	}
-	ch.active = false
+	ch.Active = false
 	ch.ticker.Stop()
 	ch.stopped <- true
 
