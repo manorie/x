@@ -1,37 +1,39 @@
 package main
 
-import (
-	"log"
-	"net/http"
-	"time"
-)
+import "log"
 
 func main() {
-	go func() {
-		log.Fatal(http.ListenAndServe("localhost:8080", globalRouter))
-	}()
-
-	ep, err := newEndPoint("https://ounass.ae/asdasda/asdads", "GET", true)
+	fs, err := newFileStore("/home/mcetin/Dev/home-go/x/storage")
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Println(fs)
 
-	ch, err := newChecker(ep, 2*time.Second, 2*time.Second)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// go func() {
+	// 	log.Fatal(http.ListenAndServe("localhost:8080", globalRouter))
+	// }()
 
-	var fn = func(ep *EndPoint) error {
-		log.Printf("checking \n%s", ep)
-		log.Println(call(ep, time.Second*2))
-		return nil
-	}
+	// ep, err := newEndPoint("https://ounass.ae/asdasda/asdads", "GET", true)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	ch.start(fn)
+	// ch, err := newChecker(ep, 2*time.Second, 2*time.Second)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	time.Sleep(10 * time.Second)
+	// var fn = func(ep *EndPoint) error {
+	// 	log.Printf("checking \n%s", ep)
+	// 	log.Println(call(ep, time.Second*2))
+	// 	return nil
+	// }
 
-	ch.stop()
+	// ch.start(fn)
+
+	// time.Sleep(10 * time.Second)
+
+	// ch.stop()
 
 	// time.Sleep(10 * time.Second)
 
