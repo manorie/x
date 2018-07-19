@@ -64,3 +64,5 @@ func call(ep *EndPoint, timeout time.Duration) *Check {
 		t1.Sub(t0).Seconds(),
 	}
 }
+
+// ss

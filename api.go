@@ -28,6 +28,7 @@ func initRoutes() {
 	http.Handle("/", globalRouter)
 }
 
+// AddCheckerHandler ...
 func AddCheckerHandler(w http.ResponseWriter, r *http.Request) {
 	ep, err := newEndPoint("https://ounass.ae/asdasda/asdads", "GET", true)
 	if err != nil {
