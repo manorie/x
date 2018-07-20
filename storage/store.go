@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"bufio"
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"os"
@@ -13,11 +15,11 @@ type fileStore struct {
 }
 
 type file struct {
-	name string
-	mu   *sync.Mutex
+	mu *sync.Mutex
 }
 
-func newFileStore(base string) (*fileStore, error) {
+// NewFileStore ...
+func NewFileStore(base string) (*fileStore, error) {
 	if base[len(base)-1] != '/' {
 		base += "/"
 	}
@@ -37,8 +39,7 @@ func newFileStore(base string) (*fileStore, error) {
 			continue
 		}
 		fs.files[f.Name()] = &file{
-			name: f.Name(),
-			mu:   &sync.Mutex{},
+			mu: &sync.Mutex{},
 		}
 	}
 	return fs, nil
@@ -56,7 +57,7 @@ func (fs *fileStore) createFile(name string) error {
 	}
 
 	fs.files[name] = &file{
-		name: name,
+		mu: &sync.Mutex{},
 	}
 	return nil
 }
@@ -67,7 +68,7 @@ var (
 )
 
 func (fs *fileStore) deleteFile(name string) error {
-	if _, present := fs.files[name]; !present {
+	if !fs.filePresent(name) {
 		return ErrFSFileNotPresentError
 	}
 
@@ -75,5 +76,95 @@ func (fs *fileStore) deleteFile(name string) error {
 		return err
 	}
 	delete(fs.files, name)
+	return nil
+}
+
+func (fs *fileStore) filePresent(name string) bool {
+	if _, present := fs.files[name]; !present {
+		return false
+	}
+	return true
+}
+
+func (fs *fileStore) WriteAsJSON(name string, obj interface{}) error {
+	if !fs.filePresent(name) {
+		if err := fs.createFile(name); err != nil {
+			return err
+		}
+	}
+	fl := fs.files[name]
+	fl.mu.Lock()
+	defer fl.mu.Unlock()
+
+	json, err := json.Marshal(obj)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(fs.basePath+name, json, 0644)
+}
+
+func (fs *fileStore) ReadAsJSON(name string, obj interface{}) error {
+	if !fs.filePresent(name) {
+		return ErrFSFileNotPresentError
+	}
+
+	fl := fs.files[name]
+	fl.mu.Lock()
+	defer fl.mu.Unlock()
+
+	data, err := ioutil.ReadFile(fs.basePath + name)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(data, obj)
+}
+
+func (fs *fileStore) AppendToFile(name, line string) error {
+	if !fs.filePresent(name) {
+		if err := fs.createFile(name); err != nil {
+			return err
+		}
+	}
+	line += "\n"
+
+	fl := fs.files[name]
+	fl.mu.Lock()
+	defer fl.mu.Unlock()
+
+	fileToWrite, err := os.OpenFile(fs.basePath+name, os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		return err
+	}
+	defer fileToWrite.Close()
+
+	if _, err := fileToWrite.WriteString(line); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (fs *fileStore) ReadLineByLine(name string, fn func(string) bool) error {
+	if !fs.filePresent(name) {
+		return ErrFSFileNotPresentError
+	}
+
+	fl := fs.files[name]
+	fl.mu.Lock()
+	defer fl.mu.Unlock()
+
+	fileToRead, err := os.Open(fs.basePath + name)
+	if err != nil {
+		return err
+	}
+	defer fileToRead.Close()
+
+	scanner := bufio.NewScanner(fileToRead)
+	for scanner.Scan() {
+		text := scanner.Text()
+		if !fn(text) {
+			break
+		}
+
+	}
 	return nil
 }

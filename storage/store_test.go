@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"io/ioutil"
 	"os"
 	"testing"
 
@@ -13,15 +14,15 @@ const (
 )
 
 func TestNewFileStore(t *testing.T) {
-	_, err := newFileStore("dummypath")
+	_, err := NewFileStore("dummypath")
 	assert.NotNil(t, err)
 
-	fs, err := newFileStore(fixturesBase)
+	fs, err := NewFileStore(fixturesBase)
 	assert.Nil(t, err)
 	assert.NotNil(t, fs)
 	assert.Equal(t, fixturesBase+"/", fs.basePath)
 
-	fs, err = newFileStore(fixturesBase + "/")
+	fs, err = NewFileStore(fixturesBase + "/")
 	assert.Nil(t, err)
 	assert.NotNil(t, fs)
 	assert.Equal(t, fixturesBase+"/", fs.basePath)
@@ -30,11 +31,11 @@ func TestNewFileStore(t *testing.T) {
 	for k, v := range fs.files {
 		switch k {
 		case "t0":
-			assert.Equal(t, "t0", v.name)
+			assert.NotNil(t, v)
 		case "t1":
-			assert.Equal(t, "t1", v.name)
+			assert.NotNil(t, v)
 		case "t2":
-			assert.Equal(t, "t2", v.name)
+			assert.NotNil(t, v)
 		}
 	}
 }
@@ -49,19 +50,19 @@ func removeTempTestFiles() error {
 func TestFileStoreCreateFile(t *testing.T) {
 	assert.Nil(t, removeTempTestFiles())
 
-	fs, err := newFileStore(tempTestDataBase)
+	fs, err := NewFileStore(tempTestDataBase)
 	assert.Nil(t, err)
 	assert.NotNil(t, fs)
 
 	assert.Nil(t, fs.createFile("alfa"))
 	assert.Equal(t, 1, len(fs.files))
 	assert.FileExists(t, tempTestDataBase+"/alfa")
-	assert.Equal(t, "alfa", fs.files["alfa"].name)
+	assert.NotNil(t, fs.files["alfa"])
 
 	assert.Nil(t, fs.createFile("beta"))
 	assert.Equal(t, 2, len(fs.files))
 	assert.FileExists(t, tempTestDataBase+"/beta")
-	assert.Equal(t, "beta", fs.files["beta"].name)
+	assert.NotNil(t, fs.files["beta"])
 
 	// already created file
 	assert.NotNil(t, fs.createFile("beta"))
@@ -70,9 +71,104 @@ func TestFileStoreCreateFile(t *testing.T) {
 func TestFileStoreDeleteFile(t *testing.T) {
 	assert.Nil(t, removeTempTestFiles())
 
-	fs, _ := newFileStore(tempTestDataBase)
+	fs, _ := NewFileStore(tempTestDataBase)
 	assert.Nil(t, fs.createFile("teta"))
 	assert.Nil(t, fs.deleteFile("teta"))
 	assert.Equal(t, 0, len(fs.files))
 	assert.NotNil(t, fs.deleteFile("notpresent"))
+}
+
+type MockForJSON struct {
+	ID    string
+	Value float64
+}
+
+func TestFileStoreWriteAsJSON(t *testing.T) {
+	assert.Nil(t, removeTempTestFiles())
+
+	fs, _ := NewFileStore(tempTestDataBase)
+	mockObject0 := &MockForJSON{
+		ID:    "1",
+		Value: 1.2,
+	}
+
+	mockObject1 := &MockForJSON{
+		ID:    "2",
+		Value: 1.3,
+	}
+
+	assert.Nil(t, fs.WriteAsJSON("mock0", mockObject0))
+
+	dat, err := ioutil.ReadFile(tempTestDataBase + "/mock0")
+	assert.Nil(t, err)
+	assert.Equal(t, "{\"ID\":\"1\",\"Value\":1.2}", string(dat))
+
+	assert.Nil(t, fs.WriteAsJSON("mock0", mockObject1))
+
+	dat, err = ioutil.ReadFile(tempTestDataBase + "/mock0")
+	assert.Nil(t, err)
+	assert.Equal(t, "{\"ID\":\"2\",\"Value\":1.3}", string(dat))
+}
+
+func TestFileStoreReadAsJSON(t *testing.T) {
+	assert.Nil(t, removeTempTestFiles())
+
+	fs, _ := NewFileStore(tempTestDataBase)
+	mockObject0 := &MockForJSON{
+		ID:    "3",
+		Value: 1.4,
+	}
+	assert.Nil(t, fs.WriteAsJSON("mock1", mockObject0))
+
+	mockObject1 := &MockForJSON{}
+	assert.Nil(t, fs.ReadAsJSON("mock1", mockObject1))
+	assert.Equal(t, "3", mockObject1.ID)
+	assert.Equal(t, 1.4, mockObject1.Value)
+}
+
+func TestFileStoreAppendToFile(t *testing.T) {
+	assert.Nil(t, removeTempTestFiles())
+
+	fs, _ := NewFileStore(tempTestDataBase)
+	assert.Nil(t, fs.AppendToFile("alfa", "beta"))
+	assert.FileExists(t, tempTestDataBase+"/alfa")
+
+	dat, err := ioutil.ReadFile(tempTestDataBase + "/alfa")
+	assert.Nil(t, err)
+	assert.Equal(t, "beta\n", string(dat))
+
+	assert.Nil(t, fs.AppendToFile("alfa", "teta"))
+
+	dat, err = ioutil.ReadFile(tempTestDataBase + "/alfa")
+	assert.Nil(t, err)
+	assert.Equal(t, "beta\nteta\n", string(dat))
+}
+
+func TestFileStoreReadLineByLine(t *testing.T) {
+	assert.Nil(t, removeTempTestFiles())
+
+	fs, _ := NewFileStore(tempTestDataBase)
+	assert.Nil(t, fs.AppendToFile("alfa", "beta"))
+	assert.Nil(t, fs.AppendToFile("alfa", "teta"))
+	assert.Nil(t, fs.AppendToFile("alfa", "omega"))
+
+	linesRead0 := make([]string, 0, 3)
+	assert.Nil(t, fs.ReadLineByLine("alfa", func(line string) bool {
+		linesRead0 = append(linesRead0, line)
+		return true
+	}))
+
+	assert.Equal(t, "beta", linesRead0[0])
+	assert.Equal(t, "teta", linesRead0[1])
+	assert.Equal(t, "omega", linesRead0[2])
+
+	linesRead1 := make([]string, 0, 3)
+	assert.Nil(t, fs.ReadLineByLine("alfa", func(line string) bool {
+		linesRead1 = append(linesRead1, line)
+		return line != "teta"
+	}))
+
+	assert.Equal(t, 2, len(linesRead1))
+	assert.Equal(t, "beta", linesRead1[0])
+	assert.Equal(t, "teta", linesRead1[1])
 }
