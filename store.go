@@ -1,6 +1,10 @@
 package main
 
-import "sync"
+import (
+	"encoding/json"
+	"io/ioutil"
+	"sync"
+)
 
 type fileStore struct {
 	basePath string
@@ -23,6 +27,21 @@ func (fs *fileStore) readFile(name string, fn func(line string)) error {
 func (fs *fileStore) appendToFile(name, toWrite string) error {
 	return nil
 }
+
+func (fs *fileStore) deleteFile(name string) error {
+	return nil
+}
+
+// nees to have basePath ending with "/"
+func (fs *fileStore) writeAsJSON(name string, obj interface{}) error {
+	json, err := json.Marshal(obj)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(fs.basePath+name, json, 0644)
+}
+
+func (fs *fileStore) readFromJSON(name string)
 
 // import (
 // 	"errors"

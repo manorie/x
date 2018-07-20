@@ -1,13 +1,12 @@
 package main
 
-import "log"
-
 func main() {
-	fs, err := newFileStore("/home/mcetin/Dev/home-go/x/storage")
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println(fs)
+
+	// fs, err := newFileStore("/home/mcetin/Dev/home-go/x/storage")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// log.Println(fs)
 
 	// go func() {
 	// 	log.Fatal(http.ListenAndServe("localhost:8080", globalRouter))
