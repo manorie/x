@@ -1,4 +1,4 @@
-4# Project X
+# Project X
 
 Two different protocols.
 
@@ -23,7 +23,7 @@ HTTP check result
 
 Persistance
 
-- InfluxDB ? Time series data
+- File storage to make it simple
 
 Common Objects
 
@@ -42,8 +42,6 @@ Status Checker
 
 BE
 
-- check.go
-  - new
 - checker.go
   - new
   - delete
@@ -53,20 +51,17 @@ BE
   - sych checkers with DB?
 - client.go
   - run(for checker)
-- store.go
-  - sync checkers?
-  - write(for checker)
-  - find_since(for checker, time)
-  - remove(checker uuid)
+- ~~store.go~~
 - api.go
+  - auth ?
   - add_checker
   - stop_checker
   - run_checker
   - delete_checker
   - update_checker
   - checks_since (for checker, time)
-- logger.go
-- errors.go
+- logger.go ?
+- errors.go ?
 - configuration.toml
 - notifier.go
   - ?
