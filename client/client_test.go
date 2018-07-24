@@ -11,20 +11,20 @@ import (
 )
 
 func TestCallWithWrongArguments(t *testing.T) {
-	check := Call("https://www.example.com", "PATCH", nil, 2*time.Second)
-	assert.NotNil(t, check)
-	assert.NotNil(t, check.Err)
-	assert.Equal(t, ErrCallUnsupportedMethod, check.Err)
+	cl, err := NewClient("https://www.example.com", "PATCH", nil, 2*time.Second)
+	assert.NotNil(t, err)
+	assert.Nil(t, cl)
+	assert.Equal(t, ErrCallUnsupportedMethod, err)
 
-	check = Call("dumy", MethodGET, nil, 4*time.Second)
-	assert.NotNil(t, check)
-	assert.NotNil(t, check.Err)
-	assert.Equal(t, "parse dumy: invalid URI for request", check.Err.Error())
+	cl, err = NewClient("dumyURL", "GET", nil, 2*time.Second)
+	assert.NotNil(t, err)
+	assert.Nil(t, cl)
+	assert.Equal(t, "parse dumyURL: invalid URI for request", err.Error())
 
-	check = Call("", MethodPOST, nil, 3*time.Second)
-	assert.NotNil(t, check)
-	assert.NotNil(t, check.Err)
-	assert.Equal(t, "parse : empty url", check.Err.Error())
+	cl, err = NewClient("", MethodPOST, nil, 3*time.Second)
+	assert.NotNil(t, err)
+	assert.Nil(t, cl)
+	assert.Equal(t, "parse : empty url", err.Error())
 }
 
 func TestCall(t *testing.T) {
@@ -39,13 +39,18 @@ func TestCall(t *testing.T) {
 	ts0 := httptest.NewServer(http.HandlerFunc(sleepingHandler))
 	defer ts0.Close()
 
-	timeoutCall := Call(ts0.URL, MethodGET, nil, time.Millisecond*400)
+	cl, err := NewClient(ts0.URL, MethodGET, nil, time.Millisecond*400)
+	assert.Nil(t, err)
+	timeoutCall := cl.Call()
 	assert.NotNil(t, timeoutCall.Err)
 
 	ts1 := httptest.NewServer(http.HandlerFunc(echoHandler))
 	defer ts1.Close()
 
-	successCall := Call(ts1.URL, MethodGET, nil, time.Second*1)
+	cl, err = NewClient(ts1.URL, MethodGET, nil, time.Second*1)
+	assert.Nil(t, err)
+
+	successCall := cl.Call()
 	assert.Nil(t, successCall.Err)
 	assert.Equal(t, 200, successCall.StatusCode)
 	assert.Equal(t, 167, successCall.Bytes)
@@ -59,7 +64,10 @@ func TestCall(t *testing.T) {
 	ts2 := httptest.NewServer(http.HandlerFunc(notFoundHandler))
 	defer ts2.Close()
 
-	notFoundCall := Call(ts2.URL, MethodGET, nil, time.Second*1)
+	cl, err = NewClient(ts2.URL, MethodGET, nil, time.Second*1)
+	assert.Nil(t, err)
+
+	notFoundCall := cl.Call()
 	assert.Nil(t, notFoundCall.Err)
 	assert.Equal(t, 404, notFoundCall.StatusCode)
 	assert.Equal(t, len("Page not found"), notFoundCall.Bytes)

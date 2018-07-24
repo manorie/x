@@ -39,34 +39,32 @@ var (
 	ErrCallUnsupportedMethod = errors.New("unsupported request method")
 )
 
-// set request ready with body to post
-// enrich header
-// -> then hit with command and return check result
+type Client struct {
+	request *http.Request
+	timeout time.Duration
+}
 
-// client -> NEW may return error -> have a UUID and stored
-// client.hit to perform
-
-func Call(path, method string, body io.Reader, timeout time.Duration) *Check {
+func NewClient(path, method string, body io.Reader, timeout time.Duration) (*Client, error) {
 	if _, present := AvailableMethods[method]; !present {
-		return &Check{
-			Err: ErrCallUnsupportedMethod,
-		}
+		return nil, ErrCallUnsupportedMethod
 	}
 
 	url, err := url.ParseRequestURI(path)
 	if err != nil {
-		return &Check{
-			Err: err,
-		}
+		return nil, err
 	}
 
 	req, err := http.NewRequest(method, url.String(), body)
 	if err != nil {
-		return &Check{
-			Err: err,
-		}
+		return nil, err
 	}
+	return &Client{
+		request: req,
+		timeout: timeout,
+	}, nil
+}
 
+func (cl *Client) Call() *Check {
 	var t0, t1 time.Time
 	trace := &httptrace.ClientTrace{
 		ConnectStart: func(_, _ string) {
@@ -74,20 +72,20 @@ func Call(path, method string, body io.Reader, timeout time.Duration) *Check {
 		},
 	}
 
-	req = req.WithContext(httptrace.WithClientTrace(
+	cl.request = cl.request.WithContext(httptrace.WithClientTrace(
 		context.Background(), trace,
 	))
 
 	client := &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConns:       10,
-			IdleConnTimeout:    timeout,
+			IdleConnTimeout:    cl.timeout,
 			DisableCompression: true,
 		},
-		Timeout: timeout,
+		Timeout: cl.timeout,
 	}
 
-	resp, err := client.Do(req)
+	resp, err := client.Do(cl.request)
 	if err != nil {
 		return &Check{
 			Err: err,

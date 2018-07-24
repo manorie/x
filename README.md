@@ -49,8 +49,8 @@ BE
   - stop
   - checkers (populate on init)
   - sych checkers with DB?
-- client.go
-  - run(for checker)
+- ~~client.go~~
+  - call(for checker)
 - ~~store.go~~
 - api.go
   - auth ?
