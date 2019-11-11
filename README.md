@@ -1,4 +1,10 @@
-# Project X
+# Ping
+---
+
+Scheduled latency recorder for API's and websites.
+
+---
+## Notes
 
 Two different protocols.
 
